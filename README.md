@@ -1,43 +1,115 @@
-# hw1
-Homework 1 – Crypto Exchange Analytics Platform
-This repository contains the files and code for the first homework assignment in the Software Design and Architecture course.
-The assignment requires building a data ingestion pipeline and documenting the overall project.
-The project focuses on analysing historical cryptocurrency data using the pipe‑and‑filter architecture style.
-Contents
-project_description.md – A one‑page overview of the entire semester project, including objectives, data sources, chosen technologies, and expected outcomes.
-requirements_specification.md – A comprehensive specification of functional and non‑functional requirements (5‑10 pages) with user personas and scenarios.
-data_pipeline.py – Python code implementing the pipe‑and‑filter data ingestion pipeline. The script retrieves the top 1 000 cryptocurrency symbols, determines the last saved date for each symbol and downloads missing OHLCV data.
-crypto_data.db (created at runtime) – SQLite database storing symbol metadata and historical OHLCV data.
-Setup and Usage
-Prerequisites
-Python 3.10+ (tested with Python 3.11)
-aiohttp
- for asynchronous HTTP requests
-ccxt
- (optional) for direct exchange access
-pandas (optional) for analysis and CSV export
-Install dependencies using pip:
-pip install aiohttp ccxt pandas
-Running the Pipeline
-Navigate to the Homework 1 directory.
-Run the pipeline:
+# 💹 CryptoScope – Data Ingestion Pipeline
+
+This repository contains the **back-end data ingestion pipeline** for **CryptoScope**, a cryptocurrency analysis platform.  
+The pipeline fetches **daily OHLCV (open, high, low, close, volume)** data for the **top 1000 active coins** and stores it in a local **SQLite database**.  
+It is implemented in **Python** using asynchronous network requests and follows the **Pipe–and–Filter architectural style**.
+
+---
+
+## 🚀 Features
+
+- **Automated Symbol Discovery** – retrieves the top N cryptocurrencies by market capitalisation using the [CryptoCompare API](https://www.cryptocompare.com/).  
+- **Hybrid Data Sources** – downloads historical OHLCV data from **Binance** where available and falls back to **CryptoCompare** when a coin is not listed on Binance.  
+- **Asynchronous I/O** – uses `asyncio` and `aiohttp` to perform many network requests concurrently, improving throughput.  
+- **Incremental Updates** – fetches only missing data since the last stored date for each symbol.  
+- **SQLite Storage** – saves data in a portable database suitable for later analysis or export.  
+
+---
+
+## 🧩 Prerequisites
+
+CryptoScope is written in **Python 3** and requires the following package:
+
+- `aiohttp`
+
+### Install on macOS (recommended inside a virtual environment)
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install aiohttp
+⚙️ Configuration
+The script uses environment variables to configure its behaviour:
+
+Variable	Description	Default
+CRYPTOCOMPARE_API_KEY	Required. API key for the CryptoCompare service. Obtain a free key at cryptocompare.com.	–
+DB_PATH	Path to the SQLite database file.	crypto_data.db
+TOP_N	Number of top coins to ingest.	1000
+MAX_CONCURRENCY	Maximum number of concurrent HTTP requests.	5
+
+Example setup
+bash
+Copy code
+export CRYPTOCOMPARE_API_KEY=your_free_api_key
+export MAX_CONCURRENCY=8
+export TOP_N=1000
+export DB_PATH=crypto_data.db
+💡 On macOS (zsh), add these lines to your ~/.zshrc file to make them permanent.
+
+▶️ Running the Pipeline
+Activate your Python environment (optional but recommended):
+
+bash
+Copy code
+python3 -m venv .venv
+source .venv/bin/activate
+pip install aiohttp
+Export your configuration variables:
+
+bash
+Copy code
+export CRYPTOCOMPARE_API_KEY=your_free_api_key
+export MAX_CONCURRENCY=8
+export TOP_N=1000
+export DB_PATH=crypto_data.db
+Run the pipeline script:
+
+bash
+Copy code
 python data_pipeline.py
+The script will:
 
-The script will initialise the SQLite database (crypto_data.db by default), fetch the list of the top 1 000 coins from CoinGecko,
-check the database for existing data and download missing data. 
-Data are inserted into the ohlcv table and can be queried with SQL or exported to CSV using a tool of your choice.
-To change the database file location or other parameters, set environment variables:
-CRYPTO_DB_PATH – Path to the SQLite database. Default is crypto_data.db.
-TOP_N – Number of coins to fetch (default 1000). Modify the constant in data_pipeline.py if needed.
+Create the database if it does not exist
 
-Notes
-The script uses the public CoinGecko API and may be subject to rate limits. If you encounter HTTP 429 (Too Many Requests) errors, 
-reduce the concurrency limit (semaphore in run_pipeline) or add delays between requests.
-The current implementation assigns the closing price to open/high/low values for daily data because CoinGecko’s market_chart endpoint does not provide OHLC data. 
-For more accurate OHLCV data, consider using the ccxt library to fetch data directly from exchanges like Binance or Kraken.
-Data collected through free APIs should not be redistributed commercially without permission. Review the terms of service of the data providers.
+Fetch the top coins
 
-Database Schema
-Table	Purpose	Key columns
-symbols	Metadata about each coin	symbol (primary key), name, market_cap_rank
-ohlcv	Daily OHLCV market data	symbol, timestamp, open, high, low, close, volume, market_cap, exchange
+Download missing OHLCV data for each symbol
+
+Print the total runtime upon completion
+
+🕒 The first run may take a while depending on your network conditions.
+
+🧠 Inspecting the Database (Optional)
+You can explore the generated SQLite file using:
+
+sqlite3 (CLI tool)
+
+DB Browser for SQLite
+
+Tables:
+
+symbols — contains metadata for each cryptocurrency
+
+ohlcv — stores daily OHLCV records
+
+🍏 Notes for macOS Users
+Ensure you are using the correct shell (bash or zsh).
+
+To fix SSL certificate issues, run:
+
+bash
+Copy code
+open /Applications/Python\ 3.x/Install\ Certificates.command
+Use python3 if python points to Python 2.
+
+🧭 Further Development
+This repository covers only the data ingestion layer (Homework 1).
+Future milestones will include:
+
+Building a REST API to serve the stored data
+
+Implementing a web front-end for charts and comparisons
+
+Adding indicators and advanced analysis features
+
+See the accompanying SRS document for a comprehensive description of project goals and requirements.
